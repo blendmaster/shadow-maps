@@ -333,7 +333,7 @@ public:
     // scaling [-1,1]x[-1,1] (normalized coordinates, after modelview and projection transformations)
     //   --> [0,texsize]x[0,texsize]
 
-    pgmDepth->on();  // turn the Phong program on
+    pgmDepth->on();  // turn the Depth program on
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // this applies to currently active framebuffer!
 
