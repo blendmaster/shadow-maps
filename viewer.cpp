@@ -25,7 +25,7 @@ using namespace EZGraphics;
 
 class ViewerEventHandlers : public TrackballHandler, public MenuCreator {
 
-  Program *pgmPhong, *pgmSquare;
+  Program *pgmPhong, *pgmDepth, *pgmSquare;
   float maxdim;
   vec3 center;
   float diameter;
@@ -194,6 +194,8 @@ public:
 
     pgmPhong = createProgram(ShaderFile(Vert,"shaders/vtxPhong.glsl"),
 			     ShaderFile(Frag,"shaders/frgPhong.glsl"));
+    pgmDepth = createProgram(ShaderFile(Vert,"shaders/vtxDepth.glsl"),
+			     ShaderFile(Frag,"shaders/frgDepth.glsl"));
     pgmSquare = createProgram(ShaderFile(Vert,"shaders/vtxSquare.glsl"),
 			    ShaderFile(Frag,"shaders/frgSquare.glsl"));
 
@@ -308,10 +310,9 @@ public:
 
     // so are all uniform variables for the Phong program...
 
-    pgmPhong->setUniform("MV",
-            //ModelView
-            light_camera_view
-            );
+    pgmDepth->setUniform("A", Projection * light_camera_view);
+
+    pgmPhong->setUniform("MV", light_camera_view);
     pgmPhong->setUniform("P",Projection);
     pgmPhong->setUniform("NM",getRotation());
     pgmPhong->setUniform("lloc",lloc);
@@ -322,7 +323,6 @@ public:
     pgmPhong->setUniform("Ia",vec3(0.2,0.2,0.2));
     pgmPhong->setUniform("nspec",1000.0f);
     pgmPhong->setUniform("reor",reor);
-
     // Here, we render into our frame buffer.
 
     fb->on();   // Turn on the framebuffer; Until it is turned off, the framebuffer will be used as
@@ -333,13 +333,13 @@ public:
     // scaling [-1,1]x[-1,1] (normalized coordinates, after modelview and projection transformations)
     //   --> [0,texsize]x[0,texsize]
 
-    pgmPhong->on();  // turn the Phong program on
+    pgmDepth->on();  // turn the Phong program on
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  // this applies to currently active framebuffer!
 
     vaPhong->sendToPipelineIndexed(GL_TRIANGLES,ix,0,3*ts);  // render the mesh as usual
 
-    pgmPhong->off();  // turn the program off
+    pgmDepth->off();  // turn the program off
 
     fb->off();  // turn the framebuffer off; currently active framebuffer = our window
 
@@ -347,7 +347,7 @@ public:
 
     glCullFace(GL_BACK);  // the square is oriented CCW
 
-    Texture *t = showColor ? tcol : tdepth;  // t: texture to be shown
+    Texture *t = tdepth;  // t: texture to be shown
 
     if (nearestInterpolation) // set interpolation method for the texture
       t->nearest();
