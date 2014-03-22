@@ -313,7 +313,8 @@ public:
     // so are all uniform variables for the Phong program...
 
     pgmDepth->setUniform("A", lightCameraProjection * light_camera_view);
-    pgmPhong->setUniform("A", lightCameraProjection * light_camera_view);
+    pgmPhong->setUniform("world_to_light_projection",
+            lightCameraProjection * R * T_light_to_origin);
 
     pgmPhong->setUniform("MV", ModelView);
     pgmPhong->setUniform("P",Projection);
@@ -331,6 +332,9 @@ public:
     fb->on();   // Turn on the framebuffer; Until it is turned off, the framebuffer will be used as
                 // the rendering target.
 
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(4.0, 1.0);
+
     glViewport(0,0,texsize,texsize);  // The framebuffer has a different resolution than the
                                       // window. This changes the viewport transformation to
     // scaling [-1,1]x[-1,1] (normalized coordinates, after modelview and projection transformations)
@@ -345,6 +349,8 @@ public:
     pgmDepth->off();  // turn the program off
 
     fb->off();  // turn the framebuffer off; currently active framebuffer = our window
+
+    glDisable(GL_POLYGON_OFFSET_FILL);
 
     Texture *t = tdepth;
     if (nearestInterpolation) // set interpolation method for the texture

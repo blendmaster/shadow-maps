@@ -9,7 +9,7 @@ out vec3 fragcolor;
 noperspective in vec3 _wnormal;
 noperspective in vec3 _wcoord;
 
-uniform mat4 A; // light camera transform/projection matrix
+uniform mat4 world_to_light_projection;
 uniform vec3 lloc;
 uniform vec3 kd,ka,ks;
 uniform float nspec;
@@ -34,7 +34,7 @@ vec2 pixel_from_light(vec4 a) {
 }
 
 bool in_shadow(vec3 q) {
-  vec4 a = A * vec4(q, 1.);
+  vec4 a = world_to_light_projection * vec4(q, 1.);
   return depth_from_camera(a) <= depth_from_light(pixel_from_light(a));
 }
 
@@ -50,14 +50,8 @@ void main() {
     if (NdotL<0) NdotL = 0.0;
     if (HdotN<0) HdotN = 0.0;
 
-    //fragcolor = ka*Ia +
-    //  (in_shadow(_wcoord) ?
-    //   (kd*NdotL + ks*pow(HdotN,nspec))*I :
-    //   vec3(0,0,0));
-
-    fragcolor = vec3(
-        depth_from_light(pixel_from_light(A * vec4(_wcoord, 1.0))),
-        depth_from_camera(A * vec4(_wcoord, 1.0)),
-        0.
-        );
+    fragcolor = ka*Ia +
+      (in_shadow(_wcoord) ?
+       (kd*NdotL + ks*pow(HdotN,nspec))*I :
+       vec3(0,0,0));
 }
