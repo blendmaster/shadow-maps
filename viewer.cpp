@@ -172,7 +172,7 @@ public:
   {
     // move light source (if it is supposed to move)
     if (lightMoving)
-      lloc = vec3(rotate(mat4(),.75f,vec3(0.0,0.0,1.0))*vec4(lloc,1.0));
+      lloc = vec3(rotate(mat4(),.25f,vec3(0.0,0.0,1.0))*vec4(lloc,1.0));
 
     glutTimerFunc(30,timerFunc,0);  // come here again in 30ms
   }
@@ -221,7 +221,7 @@ public:
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    glClearColor(1.0, 1.0, 1.0, 1.0);
+    glClearColor(0.8, 0.8, 0.8, 1.0);
     glEnable(GL_DEPTH_TEST);
 
     // build the framebuffer
@@ -301,18 +301,21 @@ public:
         T_light_to_origin * // move camera to light source
         M; // original translation to (0,0,-20)
 
-    mat4 Projection = perspective(
+    mat4 lightCameraProjection = perspective(
         fov_in_deg,
         getAspectRatio(),
         front_clip,
         back_clip
     );
 
+    mat4 Projection = perspective(getZoom(),getAspectRatio(),18.0f,22.0f);
+
     // so are all uniform variables for the Phong program...
 
-    pgmDepth->setUniform("A", Projection * light_camera_view);
+    pgmDepth->setUniform("A", lightCameraProjection * light_camera_view);
+    pgmPhong->setUniform("A", lightCameraProjection * light_camera_view);
 
-    pgmPhong->setUniform("MV", light_camera_view);
+    pgmPhong->setUniform("MV", ModelView);
     pgmPhong->setUniform("P",Projection);
     pgmPhong->setUniform("NM",getRotation());
     pgmPhong->setUniform("lloc",lloc);
@@ -343,27 +346,20 @@ public:
 
     fb->off();  // turn the framebuffer off; currently active framebuffer = our window
 
-    // Here, we render the texture into the GLUT window
-
-    glCullFace(GL_BACK);  // the square is oriented CCW
-
-    Texture *t = tdepth;  // t: texture to be shown
-
+    Texture *t = tdepth;
     if (nearestInterpolation) // set interpolation method for the texture
       t->nearest();
     else
       t->linear();
 
     t->bind(1);  // bind the texture to attachment point #1; use small numbers as TAP IDs!
-
     // resolution of the framebuffer has changes, so the viewport transform needs to be
     //  updated; we need scaling [-1,1]^2 ---> [0,width of window] x [0, height of window]
     glViewport(0,0,getWindowWidth(),getWindowHeight());
 
-    // render the square; see how the square shaders use the texture...
-    pgmSquare->on();
-    vaSquare->sendToPipeline(GL_TRIANGLE_STRIP,0,4);  // send 4 vertices
-    pgmSquare->off();
+    pgmPhong->on();  // turn the Phong program + shadows on
+    vaPhong->sendToPipelineIndexed(GL_TRIANGLES,ix,0,3*ts);  // render the mesh as usual
+    pgmPhong->off();  // turn the program off
   }
 
   virtual void cleanup()

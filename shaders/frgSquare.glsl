@@ -20,7 +20,7 @@ void main() {
 	// Use the texture() function to look up color from texture.
 	// First argument: sampler, second argument: texture coordinates.
 	// For regular samplers, opposite texture corners correspond
-        // to texture coordinates (0,0) and (1,1); this is why we scaled 
+  // to texture coordinates (0,0) and (1,1); this is why we scaled 
 	// the coordinates to [0,1] range in the vertex shader.
-	color = texture(tex,loc).rgb;
+	color = vec3(texture(tex,loc).r);
 } 
