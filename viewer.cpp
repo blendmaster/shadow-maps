@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cmath>
 
 #include <mesh.h>
 #include <trackballhandler.h>
@@ -27,6 +28,7 @@ class ViewerEventHandlers : public TrackballHandler, public MenuCreator {
   Program *pgmPhong, *pgmSquare;
   float maxdim;
   vec3 center;
+  float diameter;
   IndexBuffer *ix;
   Buffer *vnormal, *vloc, *qbuf;
   VertexArray *vaPhong, *vaSquare;
@@ -140,7 +142,7 @@ public:
     // allocate new Framebuffer
     fb = new Framebuffer;
 
-    // attach color and depth textures to it; the tcol texture will play the role of color
+    // attach color and depth rextures to it; the tcol texture will play the role of color
     //  buffer and tdepth - of the depth buffer.
     fb->attachColor(tcol);
     fb->attachDepth(tdepth);
@@ -201,6 +203,7 @@ public:
     Mesh M(getArgv()[1]);
     center = M.getCenter();
     maxdim = M.getMaxDim();
+    diameter = length(M.getUpperCorner() - M.getLowerCorner());
     ts = M.getTriangleCount();
     vloc = new Buffer(M.getVertexCount(),M.getVertexTable());
     vnormal = new Buffer(M.getVertexCount(),M.getVertexNormals());
@@ -260,17 +263,55 @@ public:
     else
       glCullFace(GL_FRONT);
 
-    // modelview and projection matrices are as always...
+    // to use the terminology in the paper
+    vec3 l = lloc;
+    vec3 c = vec3(0,0,-20);
+    vec3 l_to_c = c - l;
+    float m = maxdim;
+    float original_d = diameter;
+    float d = original_d / m;
+    float r = d / 2.;
 
-    mat4 ModelView =  translate(mat4(),vec3(0.0f,0.0f,-20.0f)) *
-      mat4(getRotation()) *
-      scale(mat4(),vec3(1/maxdim)) *
-      translate(mat4(),-center);
-    mat4 Projection = perspective(getZoom(),getAspectRatio(),18.0f,22.0f);
+    float fov_in_deg = 2. * asin(r / length(l_to_c)) * (180. / M_PI);
+    float front_clip = length(l_to_c) - r;
+    float back_clip = length(l_to_c) + r;
+
+    mat4 T_light_to_origin = translate(mat4(), -l);
+
+    vec3 neg_z = vec3(0., 0., -1.);
+
+    // vector perpendicular to both lc and (0,0,-1)
+    vec3 rotation_axis = cross(l_to_c, neg_z);
+    // angle between lc and (0,0,-1)
+    float rotation_angle_deg = acos(normalize(-l_to_c).z) * (180. / M_PI);
+    mat4 R = glm::rotate(mat4(), rotation_angle_deg, rotation_axis);
+
+    mat4 ModelView =
+      translate(mat4(),vec3(0.0f,0.0f,-20.0f)) * // move in front of camera
+      mat4(getRotation()) *                      // rotate around origin
+      scale(mat4(),vec3(1/maxdim)) *             // scale to stage
+      translate(mat4(),-center);                 // move center to origin for scaling
+
+    mat4 M = ModelView;
+
+    mat4 light_camera_view =
+        R * // rotate world around light source so (0,0,-1) is facing model
+        T_light_to_origin * // move camera to light source
+        M; // original translation to (0,0,-20)
+
+    mat4 Projection = perspective(
+        fov_in_deg,
+        getAspectRatio(),
+        front_clip,
+        back_clip
+    );
 
     // so are all uniform variables for the Phong program...
 
-    pgmPhong->setUniform("MV",ModelView);
+    pgmPhong->setUniform("MV",
+            //ModelView
+            light_camera_view
+            );
     pgmPhong->setUniform("P",Projection);
     pgmPhong->setUniform("NM",getRotation());
     pgmPhong->setUniform("lloc",lloc);
