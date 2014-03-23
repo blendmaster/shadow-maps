@@ -1,6 +1,9 @@
 #version 330
 #extension GL_ARB_shading_language_420pack: enable
 
+const int k = 3; // PCF filtering window
+const int samples = (2 * k + 1) * (2 * k + 1); // PCF no. of samples
+
 // this is a standard Phong fragment shader, plus
 // shadow test using depth map
 
@@ -15,6 +18,7 @@ uniform vec3 kd,ka,ks;
 uniform float nspec;
 uniform vec3 I,Ia;
 uniform int reor;
+uniform int texsize;
 
 layout (binding=1) uniform sampler2D tex;
 
@@ -33,9 +37,24 @@ vec2 pixel_from_light(vec4 a) {
   );
 }
 
-bool in_shadow(vec3 q) {
+// percentage in shadow
+float in_shadow(vec3 q) {
   vec4 a = world_to_light_projection * vec4(q, 1.);
-  return depth_from_camera(a) <= depth_from_light(pixel_from_light(a));
+
+  float camera_depth = depth_from_camera(a);
+
+  vec2 tex_center = pixel_from_light(a);
+  float tex_step = 1. / float(texsize);
+
+  int times_closer = 0;
+  for (int i = -k; i <= k; ++i) {
+    for (int j = -k; j <= k; ++j) {
+      vec2 t = tex_center + vec2(i, j) * tex_step;
+      if (camera_depth <= depth_from_light(t))
+        times_closer += 1;
+    }
+  }
+  return float(times_closer) / float(samples);
 }
 
 void main() {
@@ -51,7 +70,5 @@ void main() {
     if (HdotN<0) HdotN = 0.0;
 
     fragcolor = ka*Ia +
-      (in_shadow(_wcoord) ?
-       (kd*NdotL + ks*pow(HdotN,nspec))*I :
-       vec3(0,0,0));
+      in_shadow(_wcoord) * (kd*NdotL + ks*pow(HdotN,nspec))*I;
 }

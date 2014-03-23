@@ -327,6 +327,8 @@ public:
     pgmPhong->setUniform("Ia",vec3(0.2,0.2,0.2));
     pgmPhong->setUniform("nspec",1000.0f);
     pgmPhong->setUniform("reor",reor);
+    pgmPhong->setUniform("texsize", texsize);
+
     // Here, we render into our frame buffer.
 
     fb->on();   // Turn on the framebuffer; Until it is turned off, the framebuffer will be used as
