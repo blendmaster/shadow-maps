@@ -15,7 +15,17 @@ Models that work with the viewer code can be found here:
 
 # Screenshots
 
-TODO
+Stanford bunny, without PCF filtering:
+
+![bunny](screenshots/bunny.png)
+
+Beethoven bust, PCF square window size 3.
+
+![beethoven](screenshots/beethoven.png)
+
+Dragon, PCF square window size 3.
+
+![dragon](screenshots/dragon.png)
 
 # Running
 
