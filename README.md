@@ -19,6 +19,10 @@ Stanford bunny, without PCF filtering:
 
 ![bunny](screenshots/bunny.png)
 
+Stanford bunny, without PCF filtering, and with 64x64 shadow map.
+
+![bunny](screenshots/bunny-64.png)
+
 Beethoven bust, PCF square window size 3.
 
 ![beethoven](screenshots/beethoven.png)
@@ -26,6 +30,10 @@ Beethoven bust, PCF square window size 3.
 Dragon, PCF square window size 3.
 
 ![dragon](screenshots/dragon.png)
+
+Dragon, no PCF, with 256x256 shadow map.
+
+![dragon-256](screenshots/dragon-256.png)
 
 # Running
 
